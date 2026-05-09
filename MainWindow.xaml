@@ -1,0 +1,435 @@
+<Window x:Class="NodeHiveCenter.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:NodeHiveCenter.Controls"
+        xmlns:converters="clr-namespace:NodeHiveCenter.Converters"
+        xmlns:vm="clr-namespace:NodeHiveCenter.ViewModels"
+        Title="NodeHive Center"
+        WindowStyle="None"
+        ResizeMode="CanMinimize"
+        WindowState="Maximized"
+        Background="{StaticResource BgBrush}"
+        MinWidth="900" MinHeight="600">
+
+    <Window.DataContext>
+        <vm:DashboardViewModel/>
+    </Window.DataContext>
+
+    <Window.Resources>
+        <converters:StatusColorConverter        x:Key="StatusColor"/>
+        <converters:StatusForegroundConverter   x:Key="StatusFore"/>
+        <converters:IsPhaseReachedConverter     x:Key="PhaseReached"/>
+        <converters:IsCurrentPhaseConverter     x:Key="PhaseCurrent"/>
+        <converters:BoolToVisibilityConverter   x:Key="BoolVis"/>
+        <converters:BoolToAccentBrushConverter  x:Key="BoolAccent"/>
+        <converters:PhaseReachedToBrushConverter      x:Key="PhaseReachedBrush"/>
+        <converters:PhaseReachedToForegroundConverter x:Key="PhaseReachedFore"/>
+
+        <!-- Status dot pulse animation -->
+        <Storyboard x:Key="DotPulse" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetName="StatusDot"
+                             Storyboard.TargetProperty="Opacity"
+                             From="1" To="0.25" Duration="0:0:0.9"/>
+        </Storyboard>
+    </Window.Resources>
+
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Window.Loaded">
+            <BeginStoryboard Storyboard="{StaticResource DotPulse}"/>
+        </EventTrigger>
+    </Window.Triggers>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ROOT GRID  (title bar → header → top panel → middle → nodes → footer)
+    ════════════════════════════════════════════════════════════════════════ -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="36"/>     <!-- 0: Custom title bar     -->
+            <RowDefinition Height="78"/>     <!-- 1: Header               -->
+            <RowDefinition Height="88"/>     <!-- 2: Incoming request      -->
+            <RowDefinition Height="*"/>      <!-- 3: Network diagram       -->
+            <RowDefinition Height="2*"/>     <!-- 4: Node A + Node B       -->
+            <RowDefinition Height="62"/>     <!-- 5: Phase footer          -->
+        </Grid.RowDefinitions>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             ROW 0 — CUSTOM TITLE BAR
+        ═══════════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="#FF0a0f16"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1"
+                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- App name in title bar -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="12,0">
+                    <!-- Accent square icon -->
+                    <Border Width="10" Height="10" Background="{StaticResource AccentBrush}"
+                            CornerRadius="2" Margin="0,0,8,0"/>
+                    <TextBlock Text="NodeHive Center"
+                               FontFamily="Consolas" FontSize="11" FontWeight="Bold"
+                               Foreground="{StaticResource MutedBrush}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Window controls -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <Button x:Name="MinimizeBtn"
+                            Style="{StaticResource TitleBarButton}"
+                            Content="─"
+                            Foreground="{StaticResource MutedBrush}"
+                            Click="MinimizeBtn_Click"
+                            ToolTip="Minimize"/>
+                    <Button x:Name="CloseBtn"
+                            Style="{StaticResource CloseButton}"
+                            Content="✕"
+                            Foreground="{StaticResource MutedBrush}"
+                            Click="CloseBtn_Click"
+                            ToolTip="Close"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             ROW 1 — HEADER
+        ═══════════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="1"
+                Background="#FF0a0f16"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="24,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Title + subtitle -->
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="NodeHive Center"
+                               FontFamily="Consolas"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource AccentBrush}">
+                        <TextBlock.Effect>
+                            <DropShadowEffect Color="#00f5c4" BlurRadius="12" ShadowDepth="0" Opacity="0.5"/>
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <TextBlock Text="ORCHESTRATION DASHBOARD"
+                               FontFamily="Consolas"
+                               FontSize="10"
+                               Foreground="{StaticResource MutedBrush}"
+                               
+                               Margin="2,2,0,0"/>
+                </StackPanel>
+
+                <!-- Status indicator -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="0,0,4,0">
+                    <Ellipse x:Name="StatusDot"
+                             Width="9" Height="9"
+                             Margin="0,0,8,0"
+                             VerticalAlignment="Center">
+                        <Ellipse.Fill>
+                            <SolidColorBrush Color="#00f5c4"/>
+                        </Ellipse.Fill>
+                        <Ellipse.Effect>
+                            <DropShadowEffect Color="#00f5c4" BlurRadius="10" ShadowDepth="0" Opacity="0.9"/>
+                        </Ellipse.Effect>
+                    </Ellipse>
+                    <TextBlock VerticalAlignment="Center"
+                               FontFamily="Consolas" FontSize="10"
+                               Foreground="{StaticResource MutedBrush}">
+                        <TextBlock.Text>
+                            <Binding Path="IsConnected"
+                                     Converter="{StaticResource BoolVis}"
+                                     ConverterParameter="LIVE"/>
+                        </TextBlock.Text>
+                    </TextBlock>
+                    <!-- Simple connected/disconnected label -->
+                    <TextBlock x:Name="ConnectedLabel"
+                               VerticalAlignment="Center"
+                               FontFamily="Consolas" FontSize="10"
+                               Foreground="{StaticResource MutedBrush}"
+                               Text="CONNECTING...">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="CONNECTING..."/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                        <Setter Property="Text"       Value="LIVE"/>
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             ROW 2 — INCOMING REQUEST PANEL
+        ═══════════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="2"
+                Style="{StaticResource PanelCard}"
+                Margin="14,8,14,4">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Style="{StaticResource PanelLabel}"
+                           Text="// INCOMING REQUEST"/>
+
+                <TextBlock Grid.Row="1"
+                           Style="{StaticResource PanelText}"
+                           Text="{Binding PromptText}"
+                           TextTrimming="CharacterEllipsis"
+                           MaxHeight="44"/>
+            </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             ROW 3 — NETWORK DIAGRAM
+        ═══════════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="3"
+                Style="{StaticResource PanelCard}"
+                Margin="14,4,14,4">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Style="{StaticResource PanelLabel}"
+                           Text="// NETWORK TOPOLOGY"/>
+
+                <controls:NetworkDiagramControl
+                    Grid.Row="1"
+                    IsActive="{Binding IsLinesActive}"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"/>
+            </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             ROW 4 — NODE A + NODE B PANELS
+        ═══════════════════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="4" Margin="14,4,14,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ── NODE A ── -->
+            <Border Grid.Column="0" Style="{StaticResource PanelCard}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Label + badge -->
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Style="{StaticResource PanelLabel}"
+                                   Text="// NODE A" Margin="0"/>
+                        <Border Grid.Column="1"
+                                Background="{Binding NodeAStatus, Converter={StaticResource StatusColor}}"
+                                CornerRadius="3" Padding="8,3">
+                            <TextBlock Text="{Binding NodeAStatus}"
+                                       FontFamily="Consolas" FontSize="9" FontWeight="Bold"
+                                       Foreground="{Binding NodeAStatus, Converter={StaticResource StatusFore}}"/>
+                        </Border>
+                    </Grid>
+
+                    <!-- Progress bar -->
+                    <ProgressBar Grid.Row="1"
+                                 Style="{StaticResource NodeProgressBar}"
+                                 Value="{Binding NodeAProgress}"
+                                 Margin="0,0,0,10"/>
+
+                    <!-- Separator -->
+                    <Border Grid.Row="2" Height="1"
+                            Background="{StaticResource BorderBrush}"
+                            Margin="0,0,0,8"/>
+
+                    <!-- Activity log -->
+                    <ScrollViewer Grid.Row="3"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  x:Name="NodeAScroll">
+                        <ItemsControl ItemsSource="{Binding NodeALog}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}"
+                                               Style="{StaticResource MutedText}"
+                                               Margin="0,1"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- ── NODE B ── -->
+            <Border Grid.Column="2" Style="{StaticResource PanelCard}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Label + badge -->
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Style="{StaticResource PanelLabel}"
+                                   Text="// NODE B" Margin="0"/>
+                        <Border Grid.Column="1"
+                                Background="{Binding NodeBStatus, Converter={StaticResource StatusColor}}"
+                                CornerRadius="3" Padding="8,3">
+                            <TextBlock Text="{Binding NodeBStatus}"
+                                       FontFamily="Consolas" FontSize="9" FontWeight="Bold"
+                                       Foreground="{Binding NodeBStatus, Converter={StaticResource StatusFore}}"/>
+                        </Border>
+                    </Grid>
+
+                    <!-- Progress bar -->
+                    <ProgressBar Grid.Row="1"
+                                 Style="{StaticResource NodeProgressBar}"
+                                 Value="{Binding NodeBProgress}"
+                                 Margin="0,0,0,10"/>
+
+                    <!-- Separator -->
+                    <Border Grid.Row="2" Height="1"
+                            Background="{StaticResource BorderBrush}"
+                            Margin="0,0,0,8"/>
+
+                    <!-- Activity log -->
+                    <ScrollViewer Grid.Row="3"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  x:Name="NodeBScroll">
+                        <ItemsControl ItemsSource="{Binding NodeBLog}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}"
+                                               Style="{StaticResource MutedText}"
+                                               Margin="0,1"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             ROW 5 — PHASE FOOTER
+        ═══════════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="5"
+                Background="#FF0a0f16"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="14,0">
+            <Grid VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- RECEIVED -->
+                <Border Grid.Column="0" CornerRadius="4" Padding="14,6"
+                        Background="{Binding CurrentPhase, Converter={StaticResource PhaseReachedBrush}, ConverterParameter=received}">
+                    <TextBlock FontFamily="Consolas" FontSize="10" FontWeight="Bold"
+                               Text="RECEIVED"
+                               Foreground="{Binding CurrentPhase, Converter={StaticResource PhaseReachedFore}, ConverterParameter=received}"/>
+                </Border>
+
+                <!-- Arrow 1 -->
+                <TextBlock Grid.Column="1" Text="────────" VerticalAlignment="Center"
+                           HorizontalAlignment="Center" Foreground="{StaticResource BorderBrush}"
+                           FontSize="10"/>
+
+                <!-- SPLITTING -->
+                <Border Grid.Column="2" CornerRadius="4" Padding="14,6"
+                        Background="{Binding CurrentPhase, Converter={StaticResource PhaseReachedBrush}, ConverterParameter=splitting}">
+                    <TextBlock FontFamily="Consolas" FontSize="10" FontWeight="Bold"
+                               Text="SPLITTING"
+                               Foreground="{Binding CurrentPhase, Converter={StaticResource PhaseReachedFore}, ConverterParameter=splitting}"/>
+                </Border>
+
+                <!-- Arrow 2 -->
+                <TextBlock Grid.Column="3" Text="────────" VerticalAlignment="Center"
+                           HorizontalAlignment="Center" Foreground="{StaticResource BorderBrush}"
+                           FontSize="10"/>
+
+                <!-- PROCESSING -->
+                <Border Grid.Column="4" CornerRadius="4" Padding="14,6"
+                        Background="{Binding CurrentPhase, Converter={StaticResource PhaseReachedBrush}, ConverterParameter=processing}">
+                    <TextBlock FontFamily="Consolas" FontSize="10" FontWeight="Bold"
+                               Text="PROCESSING"
+                               Foreground="{Binding CurrentPhase, Converter={StaticResource PhaseReachedFore}, ConverterParameter=processing}"/>
+                </Border>
+
+                <!-- Arrow 3 -->
+                <TextBlock Grid.Column="5" Text="────────" VerticalAlignment="Center"
+                           HorizontalAlignment="Center" Foreground="{StaticResource BorderBrush}"
+                           FontSize="10"/>
+
+                <!-- AGGREGATING -->
+                <Border Grid.Column="6" CornerRadius="4" Padding="14,6"
+                        Background="{Binding CurrentPhase, Converter={StaticResource PhaseReachedBrush}, ConverterParameter=aggregating}">
+                    <TextBlock FontFamily="Consolas" FontSize="10" FontWeight="Bold"
+                               Text="AGGREGATING"
+                               Foreground="{Binding CurrentPhase, Converter={StaticResource PhaseReachedFore}, ConverterParameter=aggregating}"/>
+                </Border>
+
+                <!-- Arrow 4 -->
+                <TextBlock Grid.Column="7" Text="────────" VerticalAlignment="Center"
+                           HorizontalAlignment="Center" Foreground="{StaticResource BorderBrush}"
+                           FontSize="10"/>
+
+                <!-- DONE -->
+                <Border Grid.Column="8" CornerRadius="4" Padding="14,6"
+                        Background="{Binding CurrentPhase, Converter={StaticResource PhaseReachedBrush}, ConverterParameter=done}">
+                    <TextBlock FontFamily="Consolas" FontSize="10" FontWeight="Bold"
+                               Text="DONE"
+                               Foreground="{Binding CurrentPhase, Converter={StaticResource PhaseReachedFore}, ConverterParameter=done}"/>
+                </Border>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

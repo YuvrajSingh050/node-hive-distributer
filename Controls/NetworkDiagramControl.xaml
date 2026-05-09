@@ -1,0 +1,159 @@
+<UserControl x:Class="NodeHiveCenter.Controls.NetworkDiagramControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="200" d:DesignWidth="700">
+
+    <UserControl.Resources>
+        <!-- Marching-ants storyboard for line A (Center to Node A) -->
+        <Storyboard x:Key="MarchLineA" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="LineA"
+                             Storyboard.TargetProperty="StrokeDashOffset"
+                             From="24" To="0" Duration="0:0:1.2"/>
+        </Storyboard>
+        <!-- Marching-ants storyboard for line B (Center to Node B) -->
+        <Storyboard x:Key="MarchLineB" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="LineB"
+                             Storyboard.TargetProperty="StrokeDashOffset"
+                             From="24" To="0" Duration="0:0:1.2"/>
+        </Storyboard>
+        <!-- Node A glow pulse -->
+        <Storyboard x:Key="GlowA" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetName="GlowA"
+                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                             From="8" To="32" Duration="0:0:0.9"/>
+        </Storyboard>
+        <!-- Node B glow pulse -->
+        <Storyboard x:Key="GlowB" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetName="GlowB"
+                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                             From="8" To="32" Duration="0:0:0.9"/>
+        </Storyboard>
+        <!-- Center glow pulse -->
+        <Storyboard x:Key="GlowCenter" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetName="GlowCenter"
+                             Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                             From="12" To="40" Duration="0:0:1.1"/>
+        </Storyboard>
+    </UserControl.Resources>
+
+    <Viewbox Stretch="Uniform">
+        <!-- Fixed coordinate space: 700 × 200 -->
+        <Canvas Width="700" Height="200" Background="Transparent" x:Name="DiagramCanvas">
+
+            <!-- ═══ Connecting lines (drawn UNDER circles) ═══ -->
+
+            <!-- Line A: NodeA (145,100) ↔ Center (350,100) -->
+            <Path x:Name="LineA"
+                  Stroke="#1e3a31"
+                  StrokeThickness="2"
+                  StrokeDashArray="8 4"
+                  StrokeDashOffset="0"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round">
+                <Path.Data>
+                    <LineGeometry StartPoint="145,100" EndPoint="310,100"/>
+                </Path.Data>
+            </Path>
+
+            <!-- Line B: Center (350,100) ↔ NodeB (555,100) -->
+            <Path x:Name="LineB"
+                  Stroke="#1e3a31"
+                  StrokeThickness="2"
+                  StrokeDashArray="8 4"
+                  StrokeDashOffset="0"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round">
+                <Path.Data>
+                    <LineGeometry StartPoint="390,100" EndPoint="555,100"/>
+                </Path.Data>
+            </Path>
+
+            <!-- ═══ NODE A — center at (100, 100), r=45 ═══ -->
+            <Ellipse x:Name="GlowA"
+                     Canvas.Left="55" Canvas.Top="55"
+                     Width="90" Height="90"
+                     Fill="Transparent"
+                     Stroke="#00f5c4"
+                     StrokeThickness="1.5">
+                <Ellipse.Effect>
+                    <DropShadowEffect Color="#00f5c4" BlurRadius="8" ShadowDepth="0" Opacity="0.6"/>
+                </Ellipse.Effect>
+            </Ellipse>
+            <!-- Inner fill -->
+            <Ellipse Canvas.Left="63" Canvas.Top="63"
+                     Width="74" Height="74"
+                     Fill="#0d1117"
+                     Stroke="#00f5c4"
+                     StrokeThickness="1"/>
+            <!-- Label -->
+            <TextBlock Canvas.Left="55" Canvas.Top="88"
+                       Width="90" TextAlignment="Center"
+                       Text="NODE A"
+                       FontFamily="Consolas"
+                       FontSize="10"
+                       FontWeight="Bold"
+                       Foreground="#00f5c4"/>
+
+            <!-- ═══ CENTER NODE — center at (350, 100), r=58 ═══ -->
+            <Ellipse x:Name="GlowCenter"
+                     Canvas.Left="275" Canvas.Top="30"
+                     Width="150" Height="140"
+                     Fill="Transparent"
+                     Stroke="#00f5c4"
+                     StrokeThickness="2">
+                <Ellipse.Effect>
+                    <DropShadowEffect Color="#00f5c4" BlurRadius="20" ShadowDepth="0" Opacity="0.5"/>
+                </Ellipse.Effect>
+            </Ellipse>
+            <!-- Outer ring -->
+            <Ellipse Canvas.Left="285" Canvas.Top="38"
+                     Width="130" Height="124"
+                     Fill="#0d1117"
+                     Stroke="#00f5c4"
+                     StrokeThickness="1.5"/>
+            <!-- Labels -->
+            <TextBlock Canvas.Left="285" Canvas.Top="88"
+                       Width="130" TextAlignment="Center"
+                       Text="CENTER"
+                       FontFamily="Consolas"
+                       FontSize="11"
+                       FontWeight="Bold"
+                       Foreground="#00f5c4"/>
+            <TextBlock Canvas.Left="285" Canvas.Top="104"
+                       Width="130" TextAlignment="Center"
+                       Text="ORCHESTRATOR"
+                       FontFamily="Consolas"
+                       FontSize="7"
+                       Foreground="#00f5c4"
+                       Opacity="0.7"/>
+
+            <!-- ═══ NODE B — center at (600, 100), r=45 ═══ -->
+            <Ellipse x:Name="GlowB"
+                     Canvas.Left="555" Canvas.Top="55"
+                     Width="90" Height="90"
+                     Fill="Transparent"
+                     Stroke="#00f5c4"
+                     StrokeThickness="1.5">
+                <Ellipse.Effect>
+                    <DropShadowEffect Color="#00f5c4" BlurRadius="8" ShadowDepth="0" Opacity="0.6"/>
+                </Ellipse.Effect>
+            </Ellipse>
+            <Ellipse Canvas.Left="563" Canvas.Top="63"
+                     Width="74" Height="74"
+                     Fill="#0d1117"
+                     Stroke="#00f5c4"
+                     StrokeThickness="1"/>
+            <TextBlock Canvas.Left="555" Canvas.Top="88"
+                       Width="90" TextAlignment="Center"
+                       Text="NODE B"
+                       FontFamily="Consolas"
+                       FontSize="10"
+                       FontWeight="Bold"
+                       Foreground="#00f5c4"/>
+
+        </Canvas>
+    </Viewbox>
+</UserControl>
